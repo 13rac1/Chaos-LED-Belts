@@ -5,4 +5,6 @@
     <string name="navigation_drawer_close">Close navigation drawer</string>
 
     <string name="action_settings">Settings</string>
+    <string name="scan_connecting">Connecting</string>
+    <string name="scan_gettingupdateinfo">Waiting for device info…</string>
 </resources>
