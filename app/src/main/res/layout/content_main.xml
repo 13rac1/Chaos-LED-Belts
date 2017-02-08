@@ -15,7 +15,8 @@
     tools:context="net.eosrei.btledbelts.MainActivity">
 
     <TextView
+        android:id="@+id/status_log"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Hello World!" />
+        android:text="" />
 </RelativeLayout>

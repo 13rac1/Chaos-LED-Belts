@@ -26,6 +26,7 @@ import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.TextView;
 
 import net.eosrei.btledbelts.ble.BleDevicesScanner;
 import net.eosrei.btledbelts.ble.BleManager;
@@ -49,8 +50,10 @@ public class MainActivity extends AppCompatActivity implements
     // UI
     private long mLastUpdateMillis;
     private AlertDialog mConnectingDialog;
+    private TextView mStatusLog;
 
     // Data
+    private String btStatus = "Init";
     private BleManager mBleManager;
     private boolean mIsScanPaused = true;
     private BleDevicesScanner mScanner;
@@ -64,7 +67,7 @@ public class MainActivity extends AppCompatActivity implements
         mBleManager = BleManager.getInstance(this);
         //restoreRetainedDataFragment();
 
-        // UI
+        // UI Main and Nav
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -86,6 +89,9 @@ public class MainActivity extends AppCompatActivity implements
 
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
+
+        // UI Content
+        mStatusLog = (TextView) findViewById(R.id.status_log);
 
         // Request Bluetooth scanning permissions
         requestLocationPermissionIfNeeded();
@@ -263,6 +269,25 @@ public class MainActivity extends AppCompatActivity implements
         return true;
     }
 
+    private void updateUI() {
+        String output = "";
+        output += logPrint(btStatus);
+        // Print all found devices.
+        if(mScannedDevices != null) {
+            for (BluetoothDeviceData d : mScannedDevices) {
+                output += logPrint(d.advertisedName);
+            }
+        }
+        mStatusLog.setText(output);
+    }
+
+    /**
+     * Add a newline to a string
+     */
+    private String logPrint(String text) {
+        return text + "\n";
+    }
+
     private void resumeScanning() {
         if (mIsScanPaused) {
             startScan(null);
@@ -273,6 +298,7 @@ public class MainActivity extends AppCompatActivity implements
     // region Scan
     private void startScan(final UUID[] servicesToScan) {
         Log.d(TAG, "startScan");
+        btStatus = "Start Scan";
 
         // Stop current scanning (if needed)
         stopScanning();
@@ -281,6 +307,7 @@ public class MainActivity extends AppCompatActivity implements
         BluetoothAdapter bluetoothAdapter = BleUtils.getBluetoothAdapter(getApplicationContext());
         if (BleUtils.getBleStatus(this) != BleUtils.STATUS_BLE_ENABLED) {
             Log.w(TAG, "startScan: BluetoothAdapter not initialized or unspecified address.");
+            btStatus = "BluetoothAdapter not initialized";
         } else {
             mScanner = new BleDevicesScanner(bluetoothAdapter, servicesToScan, new BluetoothAdapter.LeScanCallback() {
                 @Override
@@ -478,9 +505,7 @@ public class MainActivity extends AppCompatActivity implements
         updateUI();
     }
     // endregion
-    private void updateUI() {
 
-    }
     // region ResetBluetoothAdapterListener
     @Override
     public void resetBluetoothCompleted() {
