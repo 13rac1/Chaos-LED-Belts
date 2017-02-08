@@ -2,16 +2,19 @@ package net.eosrei.btledbelts;
 
 import android.Manifest;
 import android.annotation.TargetApi;
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattDescriptor;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.SystemClock;
+import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.NavigationView;
@@ -31,6 +34,7 @@ import android.widget.TextView;
 import net.eosrei.btledbelts.ble.BleDevicesScanner;
 import net.eosrei.btledbelts.ble.BleManager;
 import net.eosrei.btledbelts.ble.BleUtils;
+import net.eosrei.btledbelts.ui.DialogUtils;
 
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
@@ -46,6 +50,9 @@ public class MainActivity extends AppCompatActivity implements
     private final static String TAG = MainActivity.class.getSimpleName();
     private final static long kMinDelayToUpdateUI = 200;    // in milliseconds
     private static final int PERMISSION_REQUEST_FINE_LOCATION = 1;
+
+    // Activity request codes (used for onActivityResult)
+    private static final int kActivityRequestCode_EnableBluetooth = 1;
 
     // UI
     private long mLastUpdateMillis;
@@ -92,6 +99,18 @@ public class MainActivity extends AppCompatActivity implements
 
         // UI Content
         mStatusLog = (TextView) findViewById(R.id.status_log);
+        // Setup when activity is created for the first time
+        if (savedInstanceState == null) {
+
+            // Check if bluetooth adapter is available
+            final boolean wasBluetoothEnabled = manageBluetoothAvailability();
+            final boolean areLocationServicesReadyForScanning = manageLocationServiceAvailabilityForScanning();
+
+            // Reset bluetooth
+            if (wasBluetoothEnabled && areLocationServicesReadyForScanning) {
+                BleUtils.resetBluetoothAdapter(this, this);
+            }
+        }
 
         // Request Bluetooth scanning permissions
         requestLocationPermissionIfNeeded();
@@ -275,7 +294,12 @@ public class MainActivity extends AppCompatActivity implements
         // Print all found devices.
         if(mScannedDevices != null) {
             for (BluetoothDeviceData d : mScannedDevices) {
-                output += logPrint(d.advertisedName);
+                String name = d.getNiceName();
+                output += logPrint(name);
+                if (name.contains("Adafruit")) {
+                    //Log.d(TAG, "Found:"+ name);
+
+                }
             }
         }
         mStatusLog.setText(output);
@@ -295,6 +319,94 @@ public class MainActivity extends AppCompatActivity implements
         }
     }
 
+    private boolean manageBluetoothAvailability() {
+        boolean isEnabled = true;
+
+        // Check Bluetooth HW status
+        int errorMessageId = 0;
+        final int bleStatus = BleUtils.getBleStatus(getBaseContext());
+        switch (bleStatus) {
+            case BleUtils.STATUS_BLE_NOT_AVAILABLE:
+                errorMessageId = R.string.dialog_error_no_ble;
+                isEnabled = false;
+                break;
+            case BleUtils.STATUS_BLUETOOTH_NOT_AVAILABLE: {
+                errorMessageId = R.string.dialog_error_no_bluetooth;
+                isEnabled = false;      // it was already off
+                break;
+            }
+            case BleUtils.STATUS_BLUETOOTH_DISABLED: {
+                isEnabled = false;      // it was already off
+                // if no enabled, launch settings dialog to enable it (user should always be prompted before automatically enabling bluetooth)
+                Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+                startActivityForResult(enableBtIntent, kActivityRequestCode_EnableBluetooth);
+                // execution will continue at onActivityResult()
+                break;
+            }
+        }
+        if (errorMessageId != 0) {
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            AlertDialog dialog = builder.setMessage(errorMessageId)
+                    .setPositiveButton(android.R.string.ok, null)
+                    .show();
+            DialogUtils.keepDialogOnOrientationChanges(dialog);
+        }
+
+        return isEnabled;
+    }
+
+    private boolean manageLocationServiceAvailabilityForScanning() {
+
+        boolean areLocationServiceReady = true;
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {        // Location services are only needed to be enabled from Android 6.0
+            int locationMode = Settings.Secure.LOCATION_MODE_OFF;
+            try {
+                locationMode = Settings.Secure.getInt(getContentResolver(), Settings.Secure.LOCATION_MODE);
+
+            } catch (Settings.SettingNotFoundException e) {
+                e.printStackTrace();
+            }
+            areLocationServiceReady = locationMode != Settings.Secure.LOCATION_MODE_OFF;
+
+            if (!areLocationServiceReady) {
+
+                AlertDialog.Builder builder = new AlertDialog.Builder(this);
+                AlertDialog dialog = builder.setMessage(R.string.dialog_error_nolocationservices_requiredforscan_marshmallow)
+                        .setPositiveButton(android.R.string.ok, null)
+                        .show();
+                DialogUtils.keepDialogOnOrientationChanges(dialog);
+            }
+        }
+
+        return areLocationServiceReady;
+    }
+
+    private void connect(BluetoothDevice device) {
+        boolean isConnecting = mBleManager.connect(this, device.getAddress());
+        if (isConnecting) {
+            showConnectionStatus(true);
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        if (requestCode == kActivityRequestCode_EnableBluetooth) {
+            if (resultCode == Activity.RESULT_OK) {
+                // Bluetooth was enabled, resume scanning
+                resumeScanning();
+            } else if (resultCode == Activity.RESULT_CANCELED) {
+                AlertDialog.Builder builder = new AlertDialog.Builder(this);
+                AlertDialog dialog = builder.setMessage(R.string.dialog_error_no_bluetooth)
+                        .setPositiveButton(android.R.string.ok, null)
+                        .show();
+                DialogUtils.keepDialogOnOrientationChanges(dialog);
+
+            }
+        }
+    }
     // region Scan
     private void startScan(final UUID[] servicesToScan) {
         Log.d(TAG, "startScan");
@@ -312,8 +424,8 @@ public class MainActivity extends AppCompatActivity implements
             mScanner = new BleDevicesScanner(bluetoothAdapter, servicesToScan, new BluetoothAdapter.LeScanCallback() {
                 @Override
                 public void onLeScan(final BluetoothDevice device, final int rssi, byte[] scanRecord) {
-                    final String deviceName = device.getName();
-                    Log.d(TAG, "Discovered device: " + (deviceName != null ? deviceName : "<unknown>"));
+                    //final String deviceName = device.getName();
+                    //Log.d(TAG, "Discovered device: " + (deviceName != null ? deviceName : "<unknown>"));
 
                     BluetoothDeviceData previouslyScannedDeviceData = null;
                     if (mScannedDevices == null)
@@ -367,6 +479,17 @@ public class MainActivity extends AppCompatActivity implements
         // Update UI
         updateUI();
     }
+
+    private void stopScanning() {
+        // Stop scanning
+        if (mScanner != null) {
+            mScanner.stop();
+            mScanner = null;
+        }
+
+        updateUI();
+    }
+    // endregion
 
     private void decodeScanRecords(BluetoothDeviceData deviceData) {
         // based on http://stackoverflow.com/questions/24003777/read-advertisement-packet-in-android
@@ -495,16 +618,6 @@ public class MainActivity extends AppCompatActivity implements
         deviceData.uuids = uuids;
     }
 
-    private void stopScanning() {
-        // Stop scanning
-        if (mScanner != null) {
-            mScanner.stop();
-            mScanner = null;
-        }
-
-        updateUI();
-    }
-    // endregion
 
     // region ResetBluetoothAdapterListener
     @Override
@@ -632,5 +745,6 @@ public class MainActivity extends AppCompatActivity implements
             }
         }
     }
+
 
 }

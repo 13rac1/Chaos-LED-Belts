@@ -7,4 +7,12 @@
     <string name="action_settings">Settings</string>
     <string name="scan_connecting">Connecting</string>
     <string name="scan_gettingupdateinfo">Waiting for device info…</string>
+
+    <!-- Bluetooth Adapter -->
+    <string name="dialog_error_no_ble">Bluetooth Low Energy not supported</string>
+    <string name="dialog_error_no_bluetooth">Bluetooth not available</string>
+
+    <!-- Location -->
+    <string name="dialog_error_nolocationservices_requiredforscan_marshmallow">Android 6 requires that Location Services are enabled to scan bluetooth peripherals.\nPlease, go to settings and enable it to start scanning peripherals</string>
+
 </resources>
