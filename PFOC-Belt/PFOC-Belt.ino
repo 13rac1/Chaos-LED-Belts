@@ -27,16 +27,20 @@ FASTLED_USING_NAMESPACE
 // BELT SELECT! See beltConfig.h
 beltColor currentBelt = PURPLE;
 
-#define VBATPIN             A9
 #define RECOVERY_DELAY    2000
 #define BRIGHTNESS          48
 #define FRAMES_PER_SECOND  120
+
+// Battery
+#define VBATPIN             A9
+#define VBATMIN            3.4
+float measuredVBat = 0;
+
 // Animation color settings
 uint8_t gHue = belts[currentBelt].hue;
 uint8_t range = 32;
 uint8_t gHueMin = gHue - range/2;
 
-float measuredVBat = 0;
 
 // State Management
 enum states {
@@ -133,6 +137,10 @@ void callbackConnected() {
   setBuckle(7, CRGB::Blue);
 }
 
+
+// COMMANDS
+#include "commands.h"
+
 // Handle data
 void BleUartRX() {
   if (ble.isConnected() && ble.available()) {
@@ -168,19 +176,19 @@ void BleUartRX() {
   }
 }
 
+// Check the battery voltage
 void checkBattery() {
   measuredVBat = analogRead(VBATPIN);
   measuredVBat *= 2;    // we divided by 2, so multiply back
   measuredVBat *= 3.3;  // Multiply by 3.3V, our reference voltage
   measuredVBat /= 1024; // convert to voltage
-
 }
 
 // Updates the global state variable.
 void findState() {
   // TODO: Handle START mode.
   state = RUN;
-  if (measuredVBat < 3.4) {
+  if (measuredVBat < VBATMIN) {
     state = LOWBATTERY;
   }
 }
@@ -199,116 +207,6 @@ void drawFrames() {
       drawLowBattery();
       break;
   }
-}
-
-// COMMANDS
-
-// Modified from: https://github.com/adafruit/Bluefruit_LE_Connect_Android/blob/master/app/src/main/assets/neopixel/Neopixel_Arduino.zip
-void commandVersion() {
-  if (DEBUG) Serial.println(F("Command: Version check"));
-  sendResponse("Neopixel v1.0"); // Cake to work with the Bluefruit LE app
-}
-
-// Stores values from the app.
-uint8_t width = 0;
-uint8_t height = 0;
-uint8_t components = 3; // only 3 and 4 are valid values
-uint8_t stride;
-void commandSetup() {
-  if (DEBUG) Serial.println(F("Command: Setup"));
-
-  width = ble.read();
-  height = ble.read();
-  components = ble.read();
-  stride = ble.read();
-  // Throw some out
-  ble.read(); // PixelType > /dev/null
-  ble.read(); // PixelType<<8 > /dev/null
-
-  sendResponse("OK");
-}
-
-// Sets all pixel colors to the provided values until overwritten by an animation.
-// TODO: Something else?
-#define MAXCOMPONENTS  4
-void commandClearColor() {
-  if (DEBUG) Serial.println(F("Command: ClearColor"));
-
-  // Read color
-  uint8_t color[MAXCOMPONENTS];
-  for (int j = 0; j < components;) {
-    if (ble.available()) {
-      color[j] = ble.read();
-      j++;
-    }
-  }
-
-  // Find the hue and change the animation colors
-  CHSV hsv = rgb2hsv_approximate(CRGB(color[0], color[1], color[2]));
-
-  gHue = hsv.h;
-  gHueMin = gHue - range/2;
-
-  sendResponse("OK");
-}
-
-// Sets the overall brightness
-void commandSetBrightness() {
-  if (DEBUG) Serial.println(F("Command: SetBrightness"));
-
-  uint8_t brightness = ble.read();
-  FastLED.setBrightness(brightness);
-
-  sendResponse("OK");
-}
-
-// Sets a pixel color to the provided value until overwritten by an animation.
-void commandSetPixel() {
-  if (DEBUG) Serial.println(F("Command: SetPixel"));
-
-  // Read position
-  uint8_t x = ble.read();
-  uint8_t y = ble.read();
-  uint32_t pixelIndex = y*width+x;
-
-  // Read color
-  uint8_t color[MAXCOMPONENTS];
-  for (int j = 0; j < components;) {
-    if (ble.available()) {
-      color[j] = ble.read();
-      j++;
-    }
-  }
-
-  // Set color, if possible.
-  if (pixelIndex < belts[currentBelt].num) {
-    belt_leds[pixelIndex] = CRGB(color[0], color[1], color[2]);
-  }
-
-  sendResponse("OK");
-}
-
-// Gets image data, and drops it all.
-void commandImage() {
-  if (DEBUG) Serial.println(F("Command: Image"));
-
-  // Receive new pixel buffer
-  int size = width * height;
-  for (int i = 0; i < size; i++) {
-    for (int j = 0; j < components;) {
-      if (ble.available()) {
-        ble.read(); // > /dev/null
-        j++;
-      }
-    }
-  }
-
-  sendResponse("OK"); // Cake
-}
-
-// Little wrapper for ble writes.
-void sendResponse(char *response) {
-    ble.write(response, strlen(response)*sizeof(char));
 }
 
 // DRAWING
