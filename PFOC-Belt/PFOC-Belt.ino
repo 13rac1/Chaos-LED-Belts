@@ -27,6 +27,7 @@ FASTLED_USING_NAMESPACE
 // BELT SELECT! See beltConfig.h
 beltColor currentBelt = PURPLE;
 
+#define VBATPIN             A9
 #define RECOVERY_DELAY    2000
 #define BRIGHTNESS          48
 #define FRAMES_PER_SECOND  120
@@ -35,13 +36,13 @@ uint8_t gHue = belts[currentBelt].hue;
 uint8_t range = 32;
 uint8_t gHueMin = gHue - range/2;
 
+float measuredVBat = 0;
+
 // State Management
 enum states {
   START,
   RUN,
-  CONNECT,
-  NODATA,
-  DISCONNECT
+  LOWBATTERY
 };
 states state = START;
 
@@ -114,6 +115,7 @@ void loop() {
   frameMillis = currentMillis - lastMillis;
 
   BleUartRX();
+  EVERY_N_MILLISECONDS(500){checkBattery();}
   findState();
   drawFrames();
 
@@ -132,7 +134,6 @@ void callbackConnected() {
 }
 
 // Handle data
-
 void BleUartRX() {
   if (ble.isConnected() && ble.available()) {
     setBuckle(7, CRGB::Blue);
@@ -167,11 +168,20 @@ void BleUartRX() {
   }
 }
 
+void checkBattery() {
+  measuredVBat = analogRead(VBATPIN);
+  measuredVBat *= 2;    // we divided by 2, so multiply back
+  measuredVBat *= 3.3;  // Multiply by 3.3V, our reference voltage
+  measuredVBat /= 1024; // convert to voltage
+
+}
+
 // Updates the global state variable.
 void findState() {
-  // Start mode for two seconds
-  if (state == START && currentMillis>(RECOVERY_DELAY+2000)) {
-    state = RUN;
+  // TODO: Handle START mode.
+  state = RUN;
+  if (measuredVBat < 3.4) {
+    state = LOWBATTERY;
   }
 }
 
@@ -183,6 +193,10 @@ void drawFrames() {
       break;
     case RUN:
       drawConfetti();
+      break;
+    case LOWBATTERY:
+      drawConfetti();
+      drawLowBattery();
       break;
   }
 }
@@ -229,13 +243,6 @@ void commandClearColor() {
     }
   }
 
-  // Set all LEDs to the specified color
-  for(int i = 0; i < BUCKLE_NUM_LEDS; i++) {
-    buckle_leds[i] = CRGB(color[0], color[1], color[2]);
-  }
-  for(int i = 0; i <belts[currentBelt].num; i++) {
-    belt_leds[i] = CRGB(color[0], color[1], color[2]);
-  }
   // Find the hue and change the animation colors
   CHSV hsv = rgb2hsv_approximate(CRGB(color[0], color[1], color[2]));
 
@@ -318,12 +325,23 @@ void drawTest() {
 
 // Colored speckles that blink in and fade smoothly.
 void drawConfetti() {
-  fadeToBlackBy(buckle_leds, BUCKLE_NUM_LEDS, 5);
+  fadeToBlackBy(buckle_leds, BUCKLE_NUM_LEDS, 30);
   int pos = random16(BUCKLE_NUM_LEDS);
-  buckle_leds[pos] += CHSV( gHueMin + random8(range), 255, 255);
+  buckle_leds[pos] += CHSV(gHueMin + random8(range), 255, 255);
 
-  fadeToBlackBy(belt_leds, belts[currentBelt].num, 5);
+  fadeToBlackBy(belt_leds, belts[currentBelt].num, 30);
+  // Quick hack to speed up the speckles
   int belt_pos = random16(belts[currentBelt].num);
-  belt_leds[belt_pos] += CHSV( gHueMin + random8(range), 255, 255);
+  belt_leds[belt_pos] += CHSV(gHueMin + random8(range), 255, 255);
+  belt_pos = random16(belts[currentBelt].num);
+  belt_leds[belt_pos] += CHSV(gHueMin + random8(range), 255, 255);
+  belt_pos = random16(belts[currentBelt].num);
+  belt_leds[belt_pos] += CHSV(gHueMin + random8(range), 255, 255);
+  belt_pos = random16(belts[currentBelt].num);
+  belt_leds[belt_pos] += CHSV(gHueMin + random8(range), 255, 255);
+}
+
+void drawLowBattery() {
+  buckle_leds[0] = CRGB(255, 0, 0);
 }
 
