@@ -12,18 +12,19 @@ enum beltColor {
 struct belt {
   uint8_t hue;
   uint8_t num;
+  const char *name;
 };
 
 #define NUM_BELTS               8
 belt belts[NUM_BELTS] = {
-  {0,   32}, // Red
-  {32,  28}, // Orange, confirmed.
-  {64,  32}, // Yellow
-  {96,  32}, // Green
-  {160, 32}, // Blue
-  {192, 36}, // Purple
-  {224, 30}, // Pink
-  {192, 34},  // White, no hue, special case
+  {0,   28, "AT+GAPDEVNAME=PFOC Red"},    // Confirmed length.
+  {32,  28, "AT+GAPDEVNAME=PFOC Orange"}, // Confirmed length.
+  {64,  30, "AT+GAPDEVNAME=PFOC Yellow"}, // Confirmed length.
+  {96,  26, "AT+GAPDEVNAME=PFOC Green"},  // Confirmed length.
+  {160, 26, "AT+GAPDEVNAME=PFOC Blue"},   // Confirmed length.
+  {192, 32, "AT+GAPDEVNAME=PFOC Purple"}, // Confirmed length.
+  {224, 24, "AT+GAPDEVNAME=PFOC Pink"},   // Confirmed length.
+  {192, 34, "AT+GAPDEVNAME=PFOC White"},  // Confirmed length, no hue, special case
 };
 
 #define BUCKLE_DATA_PIN         6

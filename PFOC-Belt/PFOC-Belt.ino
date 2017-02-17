@@ -7,7 +7,7 @@
 #include "Adafruit_BluefruitLE_UART.h"
 
 // Bluetooth setup
-#define FACTORYRESET_ENABLE  1     // Reset BLE NVRAM
+#define FACTORYRESET_ENABLE  1   // Reset BLE NVRAM
 #define BUFSIZE            128   // Size of the read buffer for incoming data
 #define BLUEFRUIT_SPI_CS     8
 #define BLUEFRUIT_SPI_IRQ    7
@@ -32,15 +32,14 @@ beltColor currentBelt = PURPLE;
 #define FRAMES_PER_SECOND  120
 
 // Battery
-#define VBATPIN             A9
+#define VBATPIN              9
 #define VBATMIN            3.4
-float measuredVBat = 0;
+float measuredVBat =         0;
 
 // Animation color settings
 uint8_t gHue = belts[currentBelt].hue;
-uint8_t range = 32;
+uint8_t range = 24;
 uint8_t gHueMin = gHue - range/2;
-
 
 // State Management
 enum states {
@@ -51,9 +50,9 @@ enum states {
 states state = START;
 
 // Store last and current frame times to find frame interval
-unsigned long lastMillis = 0;
+unsigned long lastMillis =    0;
 unsigned long currentMillis = 0;
-unsigned long frameMillis = 0;
+unsigned long frameMillis =   0;
 
 // Main Setup
 void setup() {
@@ -63,6 +62,8 @@ void setup() {
 
   // Set master brightness control.
   FastLED.setBrightness(BRIGHTNESS);
+  belt_leds[0] = CRGB::Green;
+  belt_leds[belts[currentBelt].num-1] = CRGB::Green;
   setBuckle(0, CRGB::Green);
 
   // Delay for recovery mode
@@ -90,14 +91,17 @@ void setup() {
     }
     else setBuckle(4, CRGB::Red);
   }
+  // Set BLE Device name
+  ble.atcommand(belts[currentBelt].name);
+  setBuckle(5, CRGB::Green);
+
   Serial.println(F("Switching to DATA mode"));
   ble.setMode(BLUEFRUIT_MODE_DATA);
-  setBuckle(5, CRGB::Green);
+  setBuckle(6, CRGB::Green);
 
   ble.setConnectCallback(callbackConnected);
   /* Disable command echo from Bluefruit */
   ble.echo(false);
-  setBuckle(6, CRGB::Green);
   setBuckle(7, CRGB::Green);
 }
 
@@ -224,19 +228,26 @@ void drawTest() {
 // Colored speckles that blink in and fade smoothly.
 void drawConfetti() {
   fadeToBlackBy(buckle_leds, BUCKLE_NUM_LEDS, 30);
-  int pos = random16(BUCKLE_NUM_LEDS);
-  buckle_leds[pos] += CHSV(gHueMin + random8(range), 255, 255);
 
   fadeToBlackBy(belt_leds, belts[currentBelt].num, 30);
-  // Quick hack to speed up the speckles
-  int belt_pos = random16(belts[currentBelt].num);
-  belt_leds[belt_pos] += CHSV(gHueMin + random8(range), 255, 255);
-  belt_pos = random16(belts[currentBelt].num);
-  belt_leds[belt_pos] += CHSV(gHueMin + random8(range), 255, 255);
-  belt_pos = random16(belts[currentBelt].num);
-  belt_leds[belt_pos] += CHSV(gHueMin + random8(range), 255, 255);
-  belt_pos = random16(belts[currentBelt].num);
-  belt_leds[belt_pos] += CHSV(gHueMin + random8(range), 255, 255);
+  int pos;
+  if (currentBelt == WHITE) {
+    // White only for WHITE
+    pos = random16(BUCKLE_NUM_LEDS);
+    buckle_leds[pos] += CRGB::White;
+    for (int i = 0; i<4; i++) {
+      pos = random16(belts[currentBelt].num);
+      belt_leds[pos] += CRGB::White;
+    }
+  }
+  else {
+    pos = random16(BUCKLE_NUM_LEDS);
+    buckle_leds[pos] += CHSV(gHueMin + random8(range), 255, 255);
+    for (int i = 0; i<4; i++) {
+      pos = random16(belts[currentBelt].num);
+      belt_leds[pos] += CHSV(gHueMin + random8(range), 255, 255);
+    }
+  }
 }
 
 void drawLowBattery() {
