@@ -34,10 +34,20 @@ belt belts[NUM_BELTS] = {
 CRGB buckle_leds[BUCKLE_NUM_LEDS];
 
 #define BELT_DATA_PIN          11
+// Check board type.
+// Reference for compile-type variables: https://github.com/arduino/Arduino/wiki/Arduino-IDE-1.5-3rd-party-Hardware-specification#boardstxt
+
 //Adafruit Feather 32u4
+#ifdef ARDUINO_AVR_FEATHER32U4
+#pragma message "Found ARDUINO_AVR_FEATHER32U4"
 #define BELT_CLK_PIN            3
+#endif
 //Adafruit Feather M0
-//#define BELT_CLK_PIN           21
+#ifdef ARDUINO_SAMD_FEATHER_M0
+#pragma message "Found ARDUINO_SAMD_FEATHER_M0"
+#define BELT_CLK_PIN           21
+#endif
+
 #define BELT_LED_TYPE     LPD8806
 #define BELT_COLOR_ORDER      GRB
 #define BELT_NUM_LEDS_MAX      40

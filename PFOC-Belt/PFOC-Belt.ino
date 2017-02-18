@@ -1,6 +1,5 @@
 // Print Debug to Serial
 #define DEBUG                1
-
 // Bluetooth
 #include "Adafruit_BLE.h"
 #include "Adafruit_BluefruitLE_SPI.h"
@@ -100,7 +99,7 @@ void setup() {
   setBuckle(6, CRGB::Green);
 
   ble.setConnectCallback(callbackConnected);
-  /* Disable command echo from Bluefruit */
+  // Disable command echo from Bluefruit
   ble.echo(false);
   setBuckle(7, CRGB::Green);
 }
@@ -140,7 +139,6 @@ void callbackConnected() {
   if (DEBUG) Serial.println(F("BLE Connected"));
   setBuckle(7, CRGB::Blue);
 }
-
 
 // COMMANDS
 #include "commands.h"
