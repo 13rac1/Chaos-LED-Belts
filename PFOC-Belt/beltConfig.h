@@ -18,7 +18,7 @@ struct belt {
 #define NUM_BELTS               8
 belt belts[NUM_BELTS] = {
   {0,   28, "AT+GAPDEVNAME=PFOC Red"},    // Confirmed length.
-  {32,  28, "AT+GAPDEVNAME=PFOC Orange"}, // Confirmed length.
+  {16,  28, "AT+GAPDEVNAME=PFOC Orange"}, // Confirmed length.
   {64,  28, "AT+GAPDEVNAME=PFOC Yellow"}, // Confirmed length.
   {96,  26, "AT+GAPDEVNAME=PFOC Green"},  // Confirmed length.
   {160, 26, "AT+GAPDEVNAME=PFOC Blue"},   // Confirmed length.
