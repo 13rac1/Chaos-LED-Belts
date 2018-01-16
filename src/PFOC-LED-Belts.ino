@@ -1,17 +1,18 @@
 // Print Debug to Serial
-#define DEBUG                1
+#define DEBUG 1
 // Bluetooth
 #include "Adafruit_BLE.h"
 #include "Adafruit_BluefruitLE_SPI.h"
 #include "Adafruit_BluefruitLE_UART.h"
 
 // Bluetooth setup
-#define FACTORYRESET_ENABLE  1   // Reset BLE NVRAM
-#define BUFSIZE            128   // Size of the read buffer for incoming data
-#define BLUEFRUIT_SPI_CS     8
-#define BLUEFRUIT_SPI_IRQ    7
-#define BLUEFRUIT_SPI_RST    4
-Adafruit_BluefruitLE_SPI ble(BLUEFRUIT_SPI_CS, BLUEFRUIT_SPI_IRQ, BLUEFRUIT_SPI_RST);
+#define FACTORYRESET_ENABLE 1  // Reset BLE NVRAM
+#define BUFSIZE 128            // Size of the read buffer for incoming data
+#define BLUEFRUIT_SPI_CS 8
+#define BLUEFRUIT_SPI_IRQ 7
+#define BLUEFRUIT_SPI_RST 4
+Adafruit_BluefruitLE_SPI ble(BLUEFRUIT_SPI_CS, BLUEFRUIT_SPI_IRQ,
+                             BLUEFRUIT_SPI_RST);
 
 // FastLED
 #include "FastLED.h"
@@ -24,45 +25,47 @@ FASTLED_USING_NAMESPACE
 #include "beltConfig.h"
 
 // BELT SELECT! See beltConfig.h
-beltColor currentBelt = PURPLE;
+beltColor currentBelt = ORANGE;
 
-#define RECOVERY_DELAY    2000
-#define BRIGHTNESS          48
-#define FRAMES_PER_SECOND  120
+#define RECOVERY_DELAY 2000
+#define BRIGHTNESS 48
+#define FRAMES_PER_SECOND 120
 
 // Battery
-#define VBATPIN              9
-#define VBATMIN            3.4
-float measuredVBat =         0;
+#define VBATPIN 9
+#define VBATMIN 3.4
+float measuredVBat = 0;
 
 // Animation color settings
 uint8_t gHue = belts[currentBelt].hue;
 uint8_t range = 24;
-uint8_t gHueMin = gHue - range/2;
+uint8_t gHueMin = gHue - range / 2;
 
 // State Management
-enum states {
-  START,
-  RUN,
-  LOWBATTERY
-};
+enum states { START, RUN, LOWBATTERY };
 states state = START;
 
 // Store last and current frame times to find frame interval
-unsigned long lastMillis =    0;
+unsigned long lastMillis = 0;
 unsigned long currentMillis = 0;
-unsigned long frameMillis =   0;
+unsigned long frameMillis = 0;
 
 // Main Setup
 void setup() {
   // Setupl FastLED LED strip configuration
-  FastLED.addLeds<BUCKLE_LED_TYPE,BUCKLE_DATA_PIN,BUCKLE_COLOR_ORDER>(buckle_leds, BUCKLE_NUM_LEDS).setCorrection(TypicalLEDStrip);
-  FastLED.addLeds<BELT_LED_TYPE,BELT_DATA_PIN,BELT_CLK_PIN,BELT_COLOR_ORDER>(belt_leds, belts[currentBelt].num).setCorrection(TypicalLEDStrip);
+  FastLED
+      .addLeds<BUCKLE_LED_TYPE, BUCKLE_DATA_PIN, BUCKLE_COLOR_ORDER>(
+          buckle_leds, BUCKLE_NUM_LEDS)
+      .setCorrection(TypicalLEDStrip);
+  FastLED
+      .addLeds<BELT_LED_TYPE, BELT_DATA_PIN, BELT_CLK_PIN, BELT_COLOR_ORDER>(
+          belt_leds, belts[currentBelt].num)
+      .setCorrection(TypicalLEDStrip);
 
   // Set master brightness control.
   FastLED.setBrightness(BRIGHTNESS);
   belt_leds[0] = CRGB::Green;
-  belt_leds[belts[currentBelt].num-1] = CRGB::Green;
+  belt_leds[belts[currentBelt].num - 1] = CRGB::Green;
   setBuckle(0, CRGB::Green);
 
   // Delay for recovery mode
@@ -71,15 +74,15 @@ void setup() {
 
   // Setup serial, no wait.
   Serial.begin(115200);
-  Serial.println(F("PFOC-Belt Serial")); //F() stores string in Flash memory
+  Serial.println(F("PFOC-Belt Serial"));  // F() stores string in Flash memory
   setBuckle(2, CRGB::Green);
 
   // Start BLE
   if (ble.begin(false)) {
     // Found Bluefruit
     setBuckle(3, CRGB::Green);
-  }
-  else setBuckle(3, CRGB::Red);
+  } else
+    setBuckle(3, CRGB::Red);
 
   // Factory Reset
   if (FACTORYRESET_ENABLE) {
@@ -87,8 +90,8 @@ void setup() {
     if (ble.factoryReset(true)) {
       // Reset Success
       setBuckle(4, CRGB::Green);
-    }
-    else setBuckle(4, CRGB::Red);
+    } else
+      setBuckle(4, CRGB::Red);
   }
   // Set BLE Device name
   ble.atcommand(belts[currentBelt].name);
@@ -114,15 +117,15 @@ void setBuckle(uint8_t led, CRGB color) {
 // Main Loop
 void loop() {
   // Delay to keep the framerate modest
-  FastLED.delay(1000/FRAMES_PER_SECOND);
-  //ble.update(100);
+  FastLED.delay(1000 / FRAMES_PER_SECOND);
+  // ble.update(100);
 
   // Calculate time since last frame.
   currentMillis = millis();
   frameMillis = currentMillis - lastMillis;
 
   BleUartRX();
-  EVERY_N_MILLISECONDS(500){checkBattery();}
+  EVERY_N_MILLISECONDS(500) { checkBattery(); }
   findState();
   drawFrames();
 
@@ -151,27 +154,27 @@ void BleUartRX() {
     int command = ble.read();
     if (DEBUG) Serial.write(command);
     switch (command) {
-      case 'V': // Get Version
+      case 'V':  // Get Version
         commandVersion();
         break;
 
-      case 'S': // Setup dimensions, components, stride...
+      case 'S':  // Setup dimensions, components, stride...
         commandSetup();
         break;
 
-      case 'C': // Clear with color
+      case 'C':  // Clear with color
         commandClearColor();
         break;
 
-      case 'B': // Set Brightness
+      case 'B':  // Set Brightness
         commandSetBrightness();
         break;
 
-      case 'P': // Set Pixel
+      case 'P':  // Set Pixel
         commandSetPixel();
         break;
 
-      case 'I': // Receive new image
+      case 'I':  // Receive new image
         commandImage();
         break;
     }
@@ -181,9 +184,9 @@ void BleUartRX() {
 // Check the battery voltage
 void checkBattery() {
   measuredVBat = analogRead(VBATPIN);
-  measuredVBat *= 2;    // we divided by 2, so multiply back
-  measuredVBat *= 3.3;  // Multiply by 3.3V, our reference voltage
-  measuredVBat /= 1024; // convert to voltage
+  measuredVBat *= 2;     // we divided by 2, so multiply back
+  measuredVBat *= 3.3;   // Multiply by 3.3V, our reference voltage
+  measuredVBat /= 1024;  // convert to voltage
 }
 
 // Updates the global state variable.
@@ -215,10 +218,10 @@ void drawFrames() {
 
 // A test to draw at startup.
 void drawTest() {
-  for(int i = 0; i < BUCKLE_NUM_LEDS; i++) {
+  for (int i = 0; i < BUCKLE_NUM_LEDS; i++) {
     buckle_leds[i] = CRGB::White;
   }
-  for(int i = 0; i < belts[currentBelt].num; i++) {
+  for (int i = 0; i < belts[currentBelt].num; i++) {
     belt_leds[i] = CRGB::White;
   }
 }
@@ -233,22 +236,18 @@ void drawConfetti() {
     // White only for WHITE
     pos = random16(BUCKLE_NUM_LEDS);
     buckle_leds[pos] += CRGB::White;
-    for (int i = 0; i<4; i++) {
+    for (int i = 0; i < 4; i++) {
       pos = random16(belts[currentBelt].num);
       belt_leds[pos] += CRGB::White;
     }
-  }
-  else {
+  } else {
     pos = random16(BUCKLE_NUM_LEDS);
     buckle_leds[pos] += CHSV(gHueMin + random8(range), 255, 255);
-    for (int i = 0; i<4; i++) {
+    for (int i = 0; i < 4; i++) {
       pos = random16(belts[currentBelt].num);
       belt_leds[pos] += CHSV(gHueMin + random8(range), 255, 255);
     }
   }
 }
 
-void drawLowBattery() {
-  buckle_leds[0] = CRGB(255, 0, 0);
-}
-
+void drawLowBattery() { buckle_leds[0] = CRGB(255, 0, 0); }

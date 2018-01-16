@@ -1,19 +1,20 @@
-// Modified from: https://github.com/adafruit/Bluefruit_LE_Connect_Android/blob/master/app/src/main/assets/neopixel/Neopixel_Arduino.zip
+// Modified from:
+// https://github.com/adafruit/Bluefruit_LE_Connect_Android/blob/master/app/src/main/assets/neopixel/Neopixel_Arduino.zip
 
 // Little wrapper for ble writes.
 void sendResponse(char *response) {
-    ble.write(response, strlen(response)*sizeof(char));
+  ble.write(response, strlen(response) * sizeof(char));
 }
 
 void commandVersion() {
   if (DEBUG) Serial.println(F("Command: Version check"));
-  sendResponse("Neopixel v1.0"); // Cake to work with the Bluefruit LE app
+  sendResponse("Neopixel v1.0");  // Cake to work with the Bluefruit LE app
 }
 
 // Stores values from the app.
 uint8_t width = 0;
 uint8_t height = 0;
-uint8_t components = 3; // only 3 and 4 are valid values
+uint8_t components = 3;  // only 3 and 4 are valid values
 uint8_t stride;
 void commandSetup() {
   if (DEBUG) Serial.println(F("Command: Setup"));
@@ -23,15 +24,16 @@ void commandSetup() {
   components = ble.read();
   stride = ble.read();
   // Throw some out
-  ble.read(); // PixelType > /dev/null
-  ble.read(); // PixelType<<8 > /dev/null
+  ble.read();  // PixelType > /dev/null
+  ble.read();  // PixelType<<8 > /dev/null
 
   sendResponse("OK");
 }
 
-// Sets all pixel colors to the provided values until overwritten by an animation.
+// Sets all pixel colors to the provided values until overwritten by an
+// animation.
 // TODO: Something else?
-#define MAXCOMPONENTS  4
+#define MAXCOMPONENTS 4
 void commandClearColor() {
   if (DEBUG) Serial.println(F("Command: ClearColor"));
 
@@ -48,7 +50,7 @@ void commandClearColor() {
   CHSV hsv = rgb2hsv_approximate(CRGB(color[0], color[1], color[2]));
 
   gHue = hsv.h;
-  gHueMin = gHue - range/2;
+  gHueMin = gHue - range / 2;
 
   sendResponse("OK");
 }
@@ -70,7 +72,7 @@ void commandSetPixel() {
   // Read position
   uint8_t x = ble.read();
   uint8_t y = ble.read();
-  uint32_t pixelIndex = y*width+x;
+  uint32_t pixelIndex = y * width + x;
 
   // Read color
   uint8_t color[MAXCOMPONENTS];
@@ -98,13 +100,11 @@ void commandImage() {
   for (int i = 0; i < size; i++) {
     for (int j = 0; j < components;) {
       if (ble.available()) {
-        ble.read(); // > /dev/null
+        ble.read();  // > /dev/null
         j++;
       }
     }
   }
 
-  sendResponse("OK"); // Cake
+  sendResponse("OK");  // Cake
 }
-
-
