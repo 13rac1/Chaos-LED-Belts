@@ -74,7 +74,7 @@ void setup() {
 
   // Setup serial, no wait.
   Serial.begin(115200);
-  Serial.println(F("PFOC-Belt Serial"));  // F() stores string in Flash memory
+  Serial.println(F("Chaos Belt Serial"));  // F() stores string in Flash memory
   setBuckle(2, CRGB::Green);
 
   // Start BLE

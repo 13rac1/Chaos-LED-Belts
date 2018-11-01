@@ -8,15 +8,14 @@ struct belt {
 
 #define NUM_BELTS 8
 belt belts[NUM_BELTS] = {
-    {0, 28, "AT+GAPDEVNAME=PFOC Red"},       // Confirmed length.
-    {16, 28, "AT+GAPDEVNAME=PFOC Orange"},   // Confirmed length.
-    {64, 28, "AT+GAPDEVNAME=PFOC Yellow"},   // Confirmed length.
-    {96, 26, "AT+GAPDEVNAME=PFOC Green"},    // Confirmed length.
-    {160, 26, "AT+GAPDEVNAME=PFOC Blue"},    // Confirmed length.
-    {192, 28, "AT+GAPDEVNAME=PFOC Purple"},  // Confirmed length.
-    {224, 24, "AT+GAPDEVNAME=PFOC Pink"},    // Confirmed length.
-    {192, 34,
-     "AT+GAPDEVNAME=PFOC White"},  // Confirmed length, no hue, special case
+    {0, 28, "AT+GAPDEVNAME=Chaos Red"},
+    {16, 28, "AT+GAPDEVNAME=Chaos Orange"},
+    {64, 28, "AT+GAPDEVNAME=Chaos Yellow"},
+    {96, 26, "AT+GAPDEVNAME=Chaos Green"},
+    {160, 26, "AT+GAPDEVNAME=Chaos Blue"},
+    {192, 28, "AT+GAPDEVNAME=Chaos Purple"},
+    {224, 24, "AT+GAPDEVNAME=Chaos Pink"},
+    {192, 34, "AT+GAPDEVNAME=Chaos White"},  // No hue, special case
 };
 
 #define BUCKLE_DATA_PIN 6
