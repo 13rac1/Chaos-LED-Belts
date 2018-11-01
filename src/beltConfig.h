@@ -15,7 +15,7 @@ belt belts[NUM_BELTS] = {
     {160, 26, "AT+GAPDEVNAME=Chaos Blue"},
     {192, 28, "AT+GAPDEVNAME=Chaos Purple"},
     {224, 24, "AT+GAPDEVNAME=Chaos Pink"},
-    {192, 34, "AT+GAPDEVNAME=Chaos White"},  // No hue, special case
+    {192, 28, "AT+GAPDEVNAME=Chaos White"},  // No hue, special case
 };
 
 #define BUCKLE_DATA_PIN 6
