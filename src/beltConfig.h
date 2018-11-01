@@ -13,7 +13,7 @@ belt belts[NUM_BELTS] = {
     {64, 28, "AT+GAPDEVNAME=PFOC Yellow"},   // Confirmed length.
     {96, 26, "AT+GAPDEVNAME=PFOC Green"},    // Confirmed length.
     {160, 26, "AT+GAPDEVNAME=PFOC Blue"},    // Confirmed length.
-    {192, 32, "AT+GAPDEVNAME=PFOC Purple"},  // Confirmed length.
+    {192, 28, "AT+GAPDEVNAME=PFOC Purple"},  // Confirmed length.
     {224, 24, "AT+GAPDEVNAME=PFOC Pink"},    // Confirmed length.
     {192, 34,
      "AT+GAPDEVNAME=PFOC White"},  // Confirmed length, no hue, special case
